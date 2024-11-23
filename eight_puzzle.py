@@ -46,6 +46,7 @@ class Board:
     }
     # minimum moves needed to solve board (each swap is 2 moves)
     min_moves = 0
+    moves = 0
 
     def __init__(self, tile_array):
         self.tile_array = tile_array
@@ -54,7 +55,12 @@ class Board:
         self.distances = self.get_distances()
 
     def __str__(self):
-        return f"{self.tile_array} min moves:{self.min_moves}"
+        # return f"{self.tile_array} min moves:{self.min_moves}"
+        display_string = ""
+        for row in range(self.ROWS):
+            display_string += ' '.join(str(num) for num in self.tile_array[row])
+            display_string += "\n"
+        return display_string
 
     def solve(self, solution = []):
         if self.min_moves == 0:
@@ -69,6 +75,7 @@ class Board:
                 closest = board
         if closest == self:
             return []
+        self.moves += 1
         solution.append(closest)
         closest.solve(solution)
         return solution
@@ -165,3 +172,4 @@ if __name__ == '__main__':
     else:
         for board in solution:
             print(board)
+    print(f"Number of moves:{len(solution)}")
