@@ -114,9 +114,9 @@ SOLVED = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8)
 UNSOLVABLE = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,15,14,0]],dtype=np.int8).tobytes()
 def dijkstra(board):
     t1 = time.time()
-    chart = {board.bytes: [0, None]} # shows all explored states
+    chart = {board.bytes: [0, None]} # shows all explored states, visited
     counter = itertools.count()
-    heap = [(0,next(counter),board)] # priority queue
+    heap = [(0,next(counter),board)] # priority queue, "unvisited"
     stop = False
     while heap and not stop:
         if len(heap) > 10000000:
@@ -162,12 +162,13 @@ def a_star(board):
         neighbours = node.get_neighbours()
 
         for i in neighbours:
+            new_distance = node.h + distance + 1
             if i.bytes not in chart:
                 heapq.heappush(heap, (i.h,next(counter),i))
-                chart[i.bytes] = [node.h,node.bytes]
+                chart[i.bytes] = [new_distance, node.bytes]
             elif i.bytes in chart:
-                if distance + 1 < chart[i.bytes][0]:
-                    chart[i.bytes] = [distance+1, node.bytes]
+                if new_distance < chart[i.bytes][0]:
+                    chart[i.bytes] = [new_distance, node.bytes]
             
             if i.bytes == SOLVED or i.bytes == UNSOLVABLE:
                 stop = True
@@ -194,4 +195,12 @@ def a_star_mp(n: int):
     board = Board(state=np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8),heuristic=True)
     board.walk(n)
     chart, heap, total_time = a_star(board)
+    return len(chart), len(heap), total_time
+
+def dijkstra_mp(n: int):
+    """dijkstra worker function for multiprocessing
+    """
+    board = Board(state=np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8),heuristic=False)
+    board.walk(n)
+    chart, heap, total_time = dijkstra(board)
     return len(chart), len(heap), total_time
