@@ -4,6 +4,15 @@
 
 import heapq
 
+class Node:
+    def __init__(self, board, shortest_path_length, previous_node = None):
+        self.board = board
+        self.shortest_path_length = shortest_path_length
+        self.previous_node = previous_node
+
+    def __lt__(self, other):
+        return self.shortest_path_length < other.shortest_path_length
+
 class Board:
     GOAL = ((1,2,3),(4,5,6),(7,8,0))
     ROWS = 3
@@ -77,62 +86,52 @@ class Board:
         tuple_board = ((x0, y0, z0), (x1, y1, z1), (x2, y2, z2))
         return tuple_board
 
-class Node:
-    def __init__(self, board, shortest_path_length, previous_node = None):
-        self.board = board
-        self.shortest_path_length = shortest_path_length
-        self.previous_node = previous_node
-
-    def __lt__(self, other):
-        return self.shortest_path_length < other.shortest_path_length
-
-def solve(start_board):
-    visited = []
-    unvisited = []
-    path_length = 0
-    start_node = Node(start_board, path_length)
-    GOAL = start_node.board.GOAL
-    heapq.heappush(unvisited, start_node)
-    shortest_paths = {start_board: start_node}
-    is_solved = False
-    previous_node = None
-    boards_checked = 0
-    # Search until unvisited list is empty or goal board is found
-    while len(unvisited) > 0:
-        # visit the unvisited node with the shortest path length first
-        node = heapq.heappop(unvisited)
-        visited.append(node.board.board)
-        boards_checked += 1
-        # increase path length and check neighbors not already visited
-        path_length = node.shortest_path_length + 1
-        neighbors = node.board.get_neighbors()
-        for neighbor_board in neighbors:
-            if neighbor_board not in visited:
-                neighbor = Board(neighbor_board)
-                neighbor_node = Node(neighbor, path_length, node)
-                # put neigbors into list in order of smallest path
-                heapq.heappush(unvisited, neighbor_node)
-                shortest_paths[neighbor_node.board] = neighbor_node
-        # Puzzle solved once goal board has been visited
-        if GOAL in visited:
-            is_solved = True
-            break
-    # don't return shortest paths if solution was not found
-    if is_solved:
-        goal_node = None
-        # find the goal node
-        for board in shortest_paths.keys():
-            if board.board == board.GOAL:
-                goal_node = shortest_paths[board]
-    # return all the goal node
-    return (goal_node, boards_checked)
+    def solve(self):
+        visited = []
+        unvisited = []
+        path_length = 0
+        start_node = Node(self, path_length)
+        heapq.heappush(unvisited, start_node)
+        shortest_paths = {self: start_node}
+        is_solved = False
+        previous_node = None
+        boards_checked = 0
+        # Search until unvisited list is empty or goal board is found
+        while len(unvisited) > 0:
+            # visit the unvisited node with the shortest path length first
+            node = heapq.heappop(unvisited)
+            visited.append(node.board.board)
+            boards_checked += 1
+            # increase path length and check neighbors not already visited
+            path_length = node.shortest_path_length + 1
+            neighbors = node.board.get_neighbors()
+            for neighbor_board in neighbors:
+                if neighbor_board not in visited:
+                    neighbor = Board(neighbor_board)
+                    neighbor_node = Node(neighbor, path_length, node)
+                    # put neigbors into list in order of smallest path
+                    heapq.heappush(unvisited, neighbor_node)
+                    shortest_paths[neighbor_node.board] = neighbor_node
+            # Puzzle solved once goal board has been visited
+            if self.GOAL in visited:
+                is_solved = True
+                break
+        # don't return shortest paths if solution was not found
+        if is_solved:
+            goal_node = None
+            # find the goal node
+            for board in shortest_paths.keys():
+                if board.board == self.GOAL:
+                    goal_node = shortest_paths[board]
+        # return all the goal node
+        return (goal_node, boards_checked)
 
 
 if __name__ == '__main__':
     initial = ((0, 1, 3), (4, 2, 5), (7, 8, 6))
     board = Board(initial)
 
-    goal_node, boards_checked = solve(board)
+    goal_node, boards_checked = board.solve()
     print(f"Boards Checked: {boards_checked}")
     if goal_node:
         print("Solved!")
@@ -148,3 +147,4 @@ if __name__ == '__main__':
             print(solved_path[(l-1) - i])
     else:
         print("Unsolvable")
+    
