@@ -1,4 +1,6 @@
-# The 8-puzzle problem using Dijkstra's algorithm
+# The 8-puzzle problem 
+# Uses A* algorith or
+# Dijkstra's algorithm
 # 3x3 grid
 # By Joe Miller
 
@@ -20,6 +22,7 @@ class Board:
 
     def __init__(self, board):
         self.board = board
+        self.coords = self.get_coords()
 
     def __str__(self):
         board_str = ""
@@ -28,6 +31,21 @@ class Board:
                 board_str += str(col)
             board_str += '\n'
         return f"{board_str}"
+
+    def min_moves(self):
+        goal_coord = [(0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)]
+        for i in range(len(self.coords)):
+            moves = abs(self.coords[i][0] - goal_coord[i][0])
+            moves += abs(self.coords[i][1] - goal_coord[i][1])
+        return moves
+
+    def get_coords(self):
+        coords = [(r,c) for c in range(self.COLS) for r in range(self.ROWS)]
+        for row in range(self.ROWS):
+            for col in range(self.COLS):
+                element = self.board[row][col]
+                coords[element] = (row, col)
+        return coords
 
     def get_neighbors(self):
         neighbors = []
@@ -86,7 +104,7 @@ class Board:
         tuple_board = ((x0, y0, z0), (x1, y1, z1), (x2, y2, z2))
         return tuple_board
 
-    def solve(self):
+    def solve(self, algorithm = 'd'):
         visited = []
         unvisited = []
         path_length = 0
@@ -102,12 +120,15 @@ class Board:
             node = heapq.heappop(unvisited)
             visited.append(node.board.board)
             boards_checked += 1
-            # increase path length and check neighbors not already visited
-            path_length = node.shortest_path_length + 1
+            # check neighbors not already visited
             neighbors = node.board.get_neighbors()
             for neighbor_board in neighbors:
                 if neighbor_board not in visited:
                     neighbor = Board(neighbor_board)
+                    if algorithm == 'a':
+                        path_length = node.shortest_path_length + neighbor.min_moves()
+                    else:
+                        path_length = node.shortest_path_length + 1
                     neighbor_node = Node(neighbor, path_length, node)
                     # put neigbors into list in order of smallest path
                     heapq.heappush(unvisited, neighbor_node)
@@ -130,8 +151,8 @@ class Board:
 if __name__ == '__main__':
     initial = ((0, 1, 3), (4, 2, 5), (7, 8, 6))
     board = Board(initial)
-
-    goal_node, boards_checked = board.solve()
+    # Pass 'a' for A* algorithm or 'd' for Dijkstra's algorithm
+    goal_node, boards_checked = board.solve('a')
     print(f"Boards Checked: {boards_checked}")
     if goal_node:
         print("Solved!")
