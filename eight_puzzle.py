@@ -1,175 +1,171 @@
-# The 8-puzzle problem using Dijkstra's algorithm
+# The 8-puzzle problem 
+# Uses A* algorith or
+# Dijkstra's algorithm
 # 3x3 grid
 # By Joe Miller
 
-class Position:
-    def __init__(self, row, col):
-        self.row = row
-        self.col = col
+import heapq
 
-    def __str__(self):
-        return f"({self.row},{self.col})"
+class Node:
+    def __init__(self, board, shortest_path_length, previous_node = None):
+        self.board = board
+        self.shortest_path_length = shortest_path_length
+        self.previous_node = previous_node
 
-class Tile:
-    def __init__(self, element, position, goal_position):
-        self.element = element
-        self.position = position
-        self.goal_position = goal_position
-        self.distance = self.get_distance()
-
-    def __str__(self):
-        return f"{self.element}({self.position.row},{self.position.col}) distance:{self.distance}"
-
-    def get_distance(self):
-        distance_row = abs(self.position.row - self.goal_position.row)
-        distance_col = abs(self.position.col - self.goal_position.col)
-        min_moves = distance_row + distance_col
-        return min_moves
+    def __lt__(self, other):
+        return self.shortest_path_length < other.shortest_path_length
 
 class Board:
+    GOAL = ((1,2,3),(4,5,6),(7,8,0))
     ROWS = 3
     COLS = 3
-    goal_tiles = [
-    [1, 2, 3], 
-    [4, 5, 6], 
-    [7, 8, 0]]
-    goal_coordinates = {
-    1: Position(0,0),
-    2: Position(0,1),
-    3: Position(0,2),
-    4: Position(1,0),
-    5: Position(1,1),
-    6: Position(1,2),
-    7: Position(2,0),
-    8: Position(2,1),
-    0: Position(2,2)
-    }
-    # minimum moves needed to solve board (each swap is 2 moves)
-    min_moves = 0
-    moves = 0
 
-    def __init__(self, tile_array):
-        self.tile_array = tile_array
-        self.tiles = self.make_tiles()
-        self.coordinates = self.get_coordinates()
-        self.distances = self.get_distances()
+    def __init__(self, board):
+        self.board = board
+        self.coords = self.get_coords()
 
     def __str__(self):
-        # return f"{self.tile_array} min moves:{self.min_moves}"
-        display_string = ""
+        board_str = ""
+        for row in self.board:
+            for col in row:
+                board_str += str(col)
+            board_str += '\n'
+        return f"{board_str}"
+
+    def min_moves(self):
+        goal_coord = [(0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)]
+        for i in range(len(self.coords)):
+            moves = abs(self.coords[i][0] - goal_coord[i][0])
+            moves += abs(self.coords[i][1] - goal_coord[i][1])
+        return moves
+
+    def get_coords(self):
+        coords = [(r,c) for c in range(self.COLS) for r in range(self.ROWS)]
         for row in range(self.ROWS):
-            display_string += ' '.join(str(num) for num in self.tile_array[row])
-            display_string += "\n"
-        return display_string
+            for col in range(self.COLS):
+                element = self.board[row][col]
+                coords[element] = (row, col)
+        return coords
 
-    def solve(self, solution = []):
-        if self.min_moves == 0:
-            return solution
-        if self.tile_array == Board.goal_tiles:
-            return solution
-        next_boards = self.get_moves()
-        # find the best next move
-        closest = self
-        for board in next_boards:
-            if board.min_moves < closest.min_moves:
-                closest = board
-        if closest == self:
-            return []
-        self.moves += 1
-        solution.append(closest)
-        closest.solve(solution)
-        return solution
+    def get_neighbors(self):
+        neighbors = []
+        # find the empty space
+        for row in range(self.ROWS):
+            for col in range(self.COLS):
+                if self.board[row][col] == 0:
+                    blank_row = row
+                    blank_col = col
+        blank_coordinates = (blank_row, blank_col)
+        # up 
+        if blank_row > 0:
+            row = blank_row - 1
+            col = blank_col 
+            new_board = self.swap((row, col), blank_coordinates)
+            neighbors.append(new_board)
+        # down
+        if blank_row < self.ROWS - 1:
+            row = blank_row + 1
+            col = blank_col 
+            new_board = self.swap((row, col), blank_coordinates)
+            neighbors.append(new_board)
+        # left 
+        if blank_col > 0:
+            row = blank_row
+            col = blank_col - 1
+            new_board = self.swap((row, col), blank_coordinates)
+            neighbors.append(new_board)
+        # right
+        if blank_col < self.COLS - 1:
+            row = blank_row
+            col = blank_col + 1
+            new_board = self.swap((row, col), blank_coordinates)
+            neighbors.append(new_board)
+        return neighbors
 
-    def get_coordinates(self):
-        coordinates = {}
-        for row in range(len(self.tile_array)):
-            for col in range(len(self.tile_array[row])):
-                element = self.tile_array[row][col]
-                coordinates[element] = Position(row, col)
-        return coordinates
-
-    def make_tiles(self):
-        tiles = {}
-        for row in range(len(self.tile_array)):
-            for col in range(len(self.tile_array[row])):
-                element = self.tile_array[row][col]
-                goal_position = self.goal_coordinates[element]
-                position = Position(row, col)
-                tile = Tile(element, position, goal_position)
-                tiles[element] = tile
-        return tiles
-
-    def get_tile(self, position):
-        element = self.tile_array[position.row][position.col]
-        tile = self.tiles[element]
-        return tile
-
-    def get_distances(self):
-        total = 0
-        distances = {}
-        for element in self.coordinates:
-            distance = self.tiles[element].distance
-            total += distance
-            distances[element] = distance
-        self.min_moves = total
-        return distances
-
-    def get_moves(self):
-        row = self.coordinates[0].row
-        col = self.coordinates[0].col
-        goal_position = self.goal_coordinates[0]
-        tile_0 = Tile(0, Position(row, col), goal_position)
-        next_boards = []
-
-        # check top tile exists
-        if (row > 0):
-            upper_tile = self.get_tile(Position(row-1, col))
-            upper_board = self.swap_tiles(tile_0, upper_tile)
-            next_boards.append(upper_board)
-        # check bottom tile exists
-        if (row < self.ROWS-1):
-            lower_tile = self.get_tile(Position(row+1, col))
-            lower_board = self.swap_tiles(tile_0, lower_tile)
-            next_boards.append(lower_board)
-        # check left tile exists
-        if (col > 0):
-            left_tile = self.get_tile(Position(row, col-1))
-            left_board = self.swap_tiles(tile_0, left_tile)
-            next_boards.append(left_board)
-        # check right tile exists
-        if (col < self.COLS-1):
-            right_tile = self.get_tile(Position(row, col+1))
-            right_board = self.swap_tiles(tile_0, right_tile)
-            next_boards.append(right_board)
-
-        return next_boards
-
-    # returns a new board with the 2 tiles switched from this board
-    def swap_tiles(self, tile_a, tile_b):
-        # copy tile array
-        new_tile_array = []
-        for r in range(self.ROWS):
+    def swap(self, element_coordinates, blank_coordinates):
+        new_board = []
+        element_row, element_col = element_coordinates
+        element = self.board[element_row][element_col]
+        blank_row, blank_col = blank_coordinates
+        for row in range(self.ROWS):
             new_row = []
-            for c in range(self.COLS):
-                new_row.append(self.tile_array[r][c])
-            new_tile_array.append(new_row)
-        # then swap tiles
-        new_tile_array[tile_a.position.row][tile_a.position.col] = tile_b.element
-        new_tile_array[tile_b.position.row][tile_b.position.col] = tile_a.element
-        # create a new board with the new tiles
-        new_board = Board(new_tile_array)
-        return new_board
+            for col in range(self.COLS):
+                if row == blank_row and col == blank_col:
+                    new_row.append(element)
+                elif row == element_row and col == element_col:
+                    new_row.append(0)
+                else:
+                    new_row.append(self.board[row][col])
+            new_board.append(new_row)
+        # convert to nested tuples
+        x0, y0, z0 = new_board[0][0], new_board[0][1], new_board[0][2]
+        x1, y1, z1 = new_board[1][0], new_board[1][1], new_board[1][2]
+        x2, y2, z2 = new_board[2][0], new_board[2][1], new_board[2][2]
+        tuple_board = ((x0, y0, z0), (x1, y1, z1), (x2, y2, z2))
+        return tuple_board
+
+    def solve(self, algorithm = 'd'):
+        visited = []
+        unvisited = []
+        path_length = 0
+        start_node = Node(self, path_length)
+        heapq.heappush(unvisited, start_node)
+        shortest_paths = {self: start_node}
+        is_solved = False
+        previous_node = None
+        boards_checked = 0
+        # Search until unvisited list is empty or goal board is found
+        while len(unvisited) > 0:
+            # visit the unvisited node with the shortest path length first
+            node = heapq.heappop(unvisited)
+            visited.append(node.board.board)
+            boards_checked += 1
+            # check neighbors not already visited
+            neighbors = node.board.get_neighbors()
+            for neighbor_board in neighbors:
+                if neighbor_board not in visited:
+                    neighbor = Board(neighbor_board)
+                    if algorithm == 'a':
+                        path_length = node.shortest_path_length + neighbor.min_moves()
+                    else:
+                        path_length = node.shortest_path_length + 1
+                    neighbor_node = Node(neighbor, path_length, node)
+                    # put neigbors into list in order of smallest path
+                    heapq.heappush(unvisited, neighbor_node)
+                    shortest_paths[neighbor_node.board] = neighbor_node
+            # Puzzle solved once goal board has been visited
+            if self.GOAL in visited:
+                is_solved = True
+                break
+        # don't return shortest paths if solution was not found
+        if is_solved:
+            goal_node = None
+            # find the goal node
+            for board in shortest_paths.keys():
+                if board.board == self.GOAL:
+                    goal_node = shortest_paths[board]
+        # return all the goal node
+        return (goal_node, boards_checked)
 
 
 if __name__ == '__main__':
-    initial = [[0, 1, 3], [4, 2, 5], [7, 8, 6]]
-    # impossible =  [[1,2,3],[4,5,6],[8,7,0]]
+    initial = ((0, 1, 3), (4, 2, 5), (7, 8, 6))
     board = Board(initial)
-    print(board)
-    solution = board.solve()
-    if solution == []:
-        print("Unsolvable")
+    # Pass 'a' for A* algorithm or 'd' for Dijkstra's algorithm
+    goal_node, boards_checked = board.solve('a')
+    print(f"Boards Checked: {boards_checked}")
+    if goal_node:
+        print("Solved!")
+        node = goal_node
+        print("Solution Path:")
+        solved_path = []
+        while node.previous_node:
+            solved_path.append(node.board)
+            node = node.previous_node
+        solved_path.append(node.board)
+        l = len(solved_path)
+        for i in range(l):
+            print(solved_path[(l-1) - i])
     else:
-        for board in solution:
-            print(board)
-    print(f"Number of moves:{len(solution)}")
+        print("Unsolvable")
+    
