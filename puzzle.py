@@ -18,35 +18,40 @@ GOAL = [(3,3),(0,0),(0,1),(0,2),(0,3),(1,0),(1,1),(1,2),(1,3),(2,0),(2,1),(2,2),
 
 class Board:
     def __init__(self,state: np.array = None, heuristic = None):
-        if state is None:
-            self.make_board()
-        else:
-            self.board = state
-            self.bytes = self.board.tobytes()
-        
-        if heuristic:
-            self.heuristic()
-        else:
-            self.h = -1
+        self.board = state if state else SOLVED_PUZZLE # sets inital board state if given, otherwise set as solved board
+        self.h = self.heuristic() if heuristic else -1 # calls function to calculate heuristic, otherwise -1
 
-
-    def make_board(self):
-        """"""
-        b = np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0],dtype=np.int8)
-        np.random.shuffle(b)
-        b.resize(4,4)
-        self.fix()
-        self.board = b
-        self.bytes = b.tobytes()
-
-    def fix(self):
-        """to be implemented
-        """
-        return
+    @property
+    def bytes(self):
+        return self.board.tobytes()
     
+    # don't use this, use self.walk() instead
+    # def make_board(self):
+    #     b = np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0],dtype=np.int8)
+    #     np.random.shuffle(b)
+    #     b.resize(4,4)
+    #     self.fix()
+    #     self.board = b
+    #     self.bytes = b.tobytes()
 
     def heuristic(self):
-        """Calculates distance heuristic
+        """Calculates distance heuristic.
+        Sum of differences of the indices 
+        Example:
+            [[ 1  2  3  4]
+             [ 5  6  7  8]
+             [ 9 10 11 12]
+             [13 14 15  0]] heuristic 0
+
+            [[ 1  2  3  4]
+             [ 5  6  7  8]
+             [ 9 10 11  0]
+             [13 14 15 12]] heuristic 2
+            
+            [[ 1  2  3  4]
+             [ 5  0  7  8]
+             [ 9  6 10 11]
+             [13 14 15 12]] heuristic 8
         """
         self.h = 0
         for idx, i in enumerate(GOAL):
@@ -97,13 +102,13 @@ class Board:
         return f"{self.board}"
     
     def walk(self, n: int = 10):
-        """Random walk on self.board with n(int) steps.
+        """Random walk on self.board with n steps.
+        Random walk won't walk back onto a visited state *
         Doesn't guarantee shortest path is n.
         """
         row, col = np.where(self.board == 0)
-        # print(self.board)
-        for i in range(n):
-            # print(i)
+        backtrack = set([self.bytes])
+        for i in range(n): 
             possibilites = []
             if row != 0:
                 possibilites.append((row-1,col))
@@ -113,13 +118,18 @@ class Board:
                 possibilites.append([row,col-1])
             if col != 3:
                 possibilites.append([row,col+1])
-            new_row, new_col = random.choice(possibilites)
-            # print(f"{[row,col]=}",f"{[new_row,new_col]=}")
-            # print(self.board[row,col], self.board[new_row, new_col])
-            self.board[row,col], self.board[new_row, new_col] = self.board[new_row, new_col], self.board[row,col]
-            row, col = new_row, new_col
-            # print(f"{[row,col]=}",f"{[new_row,new_col]=}")
-            # print(self.board)
+            random.shuffle(possibilites)
+            while possibilites: # prevent walking back to visited state
+                new_row, new_col = possibilites.pop()
+                self.board[row,col], self.board[new_row, new_col] = self.board[new_row, new_col], self.board[row,col]
+                if self.bytes not in backtrack:
+                    backtrack.add(self.bytes)
+                    row, col = new_row, new_col # new location of 0
+                    break
+                else:
+                    self.board[row,col], self.board[new_row, new_col] = self.board[new_row, new_col], self.board[row,col]
+            else:
+                print('something really really happened for you to see this print out D:', i)
 
 
 def bfs(board):
