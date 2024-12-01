@@ -69,28 +69,28 @@ class Board:
         row, col = np.where(self.board == 0)
         out = []
         if row != 0:
-            copy = self.board.copy() # deep
+            copy = self.board.copy()
             copy[row,col], copy[row-1,col] = copy[row-1,col], copy[row,col]
             if self.h == -1:
                 out.append(Board(state=copy))
             else:
                 out.append(Board(state=copy,heuristic=True))
         if row != 3:
-            copy = self.board.copy() # deep
+            copy = self.board.copy()
             copy[row,col], copy[row+1,col] = copy[row+1,col], copy[row,col]
             if self.h == -1:
                 out.append(Board(state=copy))
             else:
                 out.append(Board(state=copy,heuristic=True))
         if col != 0:
-            copy = self.board.copy() # deep
+            copy = self.board.copy()
             copy[row,col], copy[row,col-1] = copy[row,col-1], copy[row,col]
             if self.h == -1:
                 out.append(Board(state=copy))
             else:
                 out.append(Board(state=copy,heuristic=True))
         if col != 3:
-            copy = self.board.copy() # deep
+            copy = self.board.copy()
             copy[row,col], copy[row,col+1] = copy[row,col+1], copy[row,col]
             if self.h == -1:
                 out.append(Board(state=copy))
@@ -107,7 +107,7 @@ class Board:
         Doesn't guarantee shortest path is n.
         """
         row, col = np.where(self.board == 0)
-        backtrack = set([self.bytes])
+        visited = set([self.bytes])
         for i in range(n): 
             possibilites = []
             if row != 0:
@@ -122,14 +122,18 @@ class Board:
             while possibilites: # prevent walking back to visited state
                 new_row, new_col = possibilites.pop()
                 self.board[row,col], self.board[new_row, new_col] = self.board[new_row, new_col], self.board[row,col]
-                if self.bytes not in backtrack:
-                    backtrack.add(self.bytes)
+                if self.bytes not in visited:
+                    visited.add(self.bytes)
                     row, col = new_row, new_col # new location of 0
                     break
                 else:
                     self.board[row,col], self.board[new_row, new_col] = self.board[new_row, new_col], self.board[row,col]
-            else:
-                print('something really really happened for you to see this print out D:', i)
+            else: # got stuck in a corner and I'm too lazy to fix it for real (recursively calls until it works):
+                print('recursing',n)
+                new = Board()
+                new.walk(n)
+                self.board = new.board
+                return
 
 
 def bfs(board):
