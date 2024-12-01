@@ -4,10 +4,20 @@ import itertools
 import heapq
 import time
 import random
+import copy
+from collections import deque
+import multiprocessing as mp
+import pandas as pd
+import pickle
+
 # GOAL = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8)
+SOLVED_PUZZLE = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8)
+SOLVED = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8).tobytes()
+UNSOLVABLE = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,15,14,0]],dtype=np.int8).tobytes()
 GOAL = [(3,3),(0,0),(0,1),(0,2),(0,3),(1,0),(1,1),(1,2),(1,3),(2,0),(2,1),(2,2),(2,3),(3,0),(3,1),(3,2)]
+
 class Board:
-    def __init__(self,state: np.array = None, heuristic = False):
+    def __init__(self,state: np.array = None, heuristic = None):
         if state is None:
             self.make_board()
         else:
@@ -82,6 +92,9 @@ class Board:
             else:
                 out.append(Board(state=copy,heuristic=True))
         return out
+
+    def __repr__(self) -> str:
+        return f"{self.board}"
     
     def walk(self, n: int = 10):
         """Random walk on self.board with n(int) steps.
@@ -109,9 +122,78 @@ class Board:
             # print(self.board)
 
 
+def bfs(board):
+    t1 = time.time()
+    chart = {board.bytes: [0, None]} # shows all explored states, visited
+    counter = itertools.count()
+    queue = deque([board]) # queue, "unvisited"
+    stop = False
+    while queue and not stop:
+        if len(queue) > 10000000:
+            # stop search if queue gets too big
+            break
+        node = queue.popleft()
+        neighbours = node.get_neighbours()
 
-SOLVED = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8).tobytes()
-UNSOLVABLE = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,15,14,0]],dtype=np.int8).tobytes()
+        for i in neighbours:
+            if i.bytes not in chart:
+                queue.append(i)
+                chart[i.bytes] = [node.bytes]
+            elif i.bytes in chart:
+                continue
+            
+
+            if i.bytes == SOLVED or i.bytes == UNSOLVABLE:
+                # stop search if solved
+                stop = True
+                break
+
+    if stop:
+        # print('SOLVED')
+        pass
+    elif len(queue) > 10000000:
+        print(f'BIG HEAP, {len(queue)=}')
+    total_time = time.time()-t1
+    print(f'sampled {len(chart)} states in {total_time:.2f} seconds')
+
+    return len(chart), len(queue), total_time
+
+def dfs(board):
+    t1 = time.time()
+    chart = {board.bytes: [0, None]} # shows all explored states, visited
+    counter = itertools.count()
+    stack = [board] # queue, "unvisited"
+    stop = False
+    while stack and not stop:
+        if len(stack) > 10000000:
+            # stop search if queue gets too big
+            break
+        node = stack.pop()
+        neighbours = node.get_neighbours()
+
+        for i in neighbours:
+            if i.bytes not in chart:
+                stack.append(i)
+                chart[i.bytes] = [node.bytes]
+            elif i.bytes in chart:
+                continue
+            
+
+            if i.bytes == SOLVED or i.bytes == UNSOLVABLE:
+                # stop search if solved
+                stop = True
+                break
+
+    if stop:
+        # print('SOLVED')
+        pass
+    elif len(stack) > 10000000:
+        print(f'BIG HEAP, {len(stack)=}')
+    total_time = time.time()-t1
+    print(f'sampled {len(chart)} states in {total_time:.2f} seconds')
+
+    return len(chart), len(stack), total_time
+
 def dijkstra(board):
     t1 = time.time()
     chart = {board.bytes: [0, None]} # shows all explored states, visited
@@ -128,7 +210,7 @@ def dijkstra(board):
         for i in neighbours:
             if i.bytes not in chart:
                 heapq.heappush(heap, (distance+1,next(counter),i))
-                chart[i.bytes] = [node.h,node.bytes]
+                chart[i.bytes] = [distance+1,node.bytes]
             elif i.bytes in chart:
                 if distance + 1 < chart[i.bytes][0]: # done for completeness, 15puzzle dijkstra should never hit this
                     chart[i.bytes] = [distance+1, node.bytes]
@@ -140,13 +222,14 @@ def dijkstra(board):
                 break
 
     if stop:
-        print('SOLVED')
+        # print('SOLVED')
+        pass
     elif len(heap) > 10000000:
         print(f'BIG HEAP, {len(heap)=}')
     total_time = time.time()-t1
     print(f'sampled {len(chart)} states in {total_time:.2f} seconds')
 
-    return chart, heap, total_time
+    return len(chart), len(heap), total_time
 
 def a_star(board):
     t1 = time.time()
@@ -175,13 +258,14 @@ def a_star(board):
                 break
 
     if stop:
-        print('SOLVED')
+        # print('SOLVED')
+        pass
     elif len(heap) > 10000000:
         print(f'BIG HEAP, {len(heap)=}')
     total_time = time.time()-t1
     print(f'sampled {len(chart)} states in {total_time:.2f} seconds')
 
-    return chart, heap, total_time
+    return len(chart), len(heap), total_time
 
 def path(chart: dict[bytes,tuple[int,int,Board]], state: bytes):
     new = chart[state]
@@ -189,18 +273,43 @@ def path(chart: dict[bytes,tuple[int,int,Board]], state: bytes):
         print(new[2].board)
         new = chart[new[2].tobytes()]
         
-def a_star_mp(n: int):
+def a_star_mp(board: Board):
     """a_star worker function for multiprocessing
     """
-    board = Board(state=np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8),heuristic=True)
-    board.walk(n)
-    chart, heap, total_time = a_star(board)
-    return len(chart), len(heap), total_time
+    board.heuristic()
+    chart_size, heap_size, total_time = a_star(board)
+    return chart_size, heap_size, total_time
 
-def dijkstra_mp(n: int):
+def dijkstra_mp(board: Board):
     """dijkstra worker function for multiprocessing
     """
-    board = Board(state=np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8),heuristic=False)
-    board.walk(n)
-    chart, heap, total_time = dijkstra(board)
-    return len(chart), len(heap), total_time
+    chart_size, heap_size, total_time = dijkstra(board)
+    return chart_size, heap_size, total_time
+
+def bfs_mp(board: Board):
+    """bfs worker function for multiprocessing
+    """
+    chart_size, queue_size, total_time = bfs(board)
+    return chart_size, queue_size, total_time
+
+def dfs_mp(board: Board):
+    """dfs worker function for multiprocessing
+    """
+    chart_size, stack_size, total_time = dfs(board)
+    return chart_size, stack_size, total_time
+
+
+# def compare_methods(n: int, methods = [a_star, dijkstra]):
+#     original = Board(state=np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8),heuristic=False)
+#     original.walk(n)
+    
+#     out = {}
+#     for i in methods:
+#         board = Board(state=original.board, heuristic=i.__name__)
+#         chart, heap, total_time = i(board)
+#         out[f"{i.__name__}_states"] = len(chart)
+#         out[f"{i.__name__}_heap"] = len(heap)
+#         out[f"{i.__name__}_time"] = total_time
+
+#     return out
+
