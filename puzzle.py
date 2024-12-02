@@ -148,6 +148,8 @@ class Board:
         return path
 
     def solve(self, method = "a_star"):
+        """ Search Algorithms: a_star and dijkstra
+        """
         # bookkeeping
         self.method = method
         t1 = time.time()
@@ -156,7 +158,7 @@ class Board:
 
         # set up dictionary and heap
         visited = {self.bytes: [0, None]}
-        unvisited = [(0,next(counter),self)]
+        unvisited = [(self.heuristic,next(counter),self)]
         while unvisited and not stop:
             # ways to exit search
             if len(visited) > 1000000 and time.time() - t1 > 60:
@@ -166,27 +168,36 @@ class Board:
             neighbours = node.get_neighbours()
             for i in neighbours:
                 new_distance = distance+1+i.heuristic-node.heuristic
-                if i.bytes not in visited:
+                if i.bytes not in visited or new_distance < visited[i.bytes][0]:
                     heapq.heappush(unvisited, (new_distance,next(counter),i))
                     visited[i.bytes] = [new_distance,node.bytes]
-                elif i.bytes in visited:
-                    if new_distance < visited[i.bytes][0]:
-                        visited[i.bytes] = [new_distance, node.bytes]
-
                 if i.solved:
+                    print('solved!!')
                     stop = True
                     break
 
+
         total_time = time.time() - t1
         print(f'sampled {len(visited)} states in {total_time:.2f} seconds')
+        self.visited = visited
         return len(visited), len(unvisited), total_time
 
+    def reconstruct_path(self):
+        """Reconstructs solve path from self.visited dictionary
+        """
+        byte_path = []
+        node = SOLVED
+        while node:
+            byte_path.append(node)
+            _, node = self.visited[node]
+        self.byte_path = byte_path
+    
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", help="Input file: data/...")
-    parser.add_argument("-m", "--method", help="Solve method: a_star, dijkstra, bfs, dfs, bidirectional")
+    parser.add_argument("-i", "--input", help="Input file: data/5/0.pickle ...")
+    parser.add_argument("-m", "--method", help="Solve method: a_star, dijkstra, (bidirectional)")
     args = parser.parse_args()
 
 
@@ -196,4 +207,4 @@ if __name__ == "__main__":
     results = board.solve(args.method)
 
     with open(f"results/{args.method}/{args.input.split('/')[-2]}.csv","a") as f:
-        f.write(f"{results[0]},{results[1]},{results[2]}\n")
+        f.write(f"{args.input.removeprefix('data/')},{results[0]},{results[1]},{results[2]}\n")
