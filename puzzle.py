@@ -159,13 +159,13 @@ class Board:
         unvisited = [(0,next(counter),self)]
         while unvisited and not stop:
             # ways to exit search
-            if len(visited) > 10000000 and time.time() - t1 > 60:
+            if len(visited) > 1000000 and time.time() - t1 > 60:
                 print(f"TOO SLOW, {len(visited) = }, {time.time() - t1:.2f} seconds")
                 break
             distance, _, node = heapq.heappop(unvisited)
             neighbours = node.get_neighbours()
             for i in neighbours:
-                new_distance = distance+1+i.heuristic
+                new_distance = distance+1+i.heuristic-node.heuristic
                 if i.bytes not in visited:
                     heapq.heappush(unvisited, (new_distance,next(counter),i))
                     visited[i.bytes] = [new_distance,node.bytes]
