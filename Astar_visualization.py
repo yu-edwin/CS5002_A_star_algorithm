@@ -27,7 +27,7 @@ class point:
 		if point._tag:
 			self.x=x
 			self.y=y
-			self.father=None
+			self.parent=None
 			self.F=0# Total cost (F = G + H)
 			self.G=0# Cost from start to current node
 			self.cost=0# Cost from parent to current node
@@ -44,9 +44,9 @@ class point:
 		else:
 			return False
 	def __str__(self):
-		return'(%d,%d)[F=%d,G=%d,cost=%d][father:(%s)]'%(self.x,self.y,self.F,self.G,self.cost,
-												   str((self.father.x,self.father.y))
-												   if self.father!=None else 'null')
+		return'(%d,%d)[F=%d,G=%d,cost=%d][parent:(%s)]'%(self.x,self.y,self.F,self.G,self.cost,
+												   str((self.parent.x,self.parent.y))
+												   if self.parent!=None else 'null')
 class A_Search:
 	def __init__(self,arg_start,arg_end,arg_map):
 		self.start=arg_start# Store the start point of this search
@@ -60,7 +60,7 @@ class A_Search:
 		self.open.append(arg_start)
 	def cal_F(self,loc):
 		print('Calculation values: ',loc)
-		G=loc.father.G+loc.cost
+		G=loc.parent.G+loc.cost
 		H=self.getEstimate(loc)
 		F=G+H
 		print("F=%d G=%d H=%d"%(F,G,H))
@@ -92,7 +92,7 @@ class A_Search:
 				nl.append(nt)
 		return nl
  
-	def addToOpen(self,l,father):
+	def addToOpen(self,l,parent):
 		# The passable points around the point of this judgment are added
         # to the OPEN list, if this point is already in the OPEN list then
         # it is judged, if the F value obtained from this path is smaller than
@@ -101,21 +101,21 @@ class A_Search:
 		for i in l:
 			if i not in self.open:
 				if i not in self.close:
-					i.father=father
+					i.parent=parent
 					self.open.append(i)
 					r=self.cal_F(i)
 					i.G=r['G']
 					i.F=r['F']
 			else:
-				tf=i.father
-				i.father=father
+				tf=i.parent
+				i.parent=parent
 				r=self.cal_F(i)
 				if i.F>r['F']:
 					i.G=r['G']
 					i.F=r['F']
-					# i.father=father
+					# i.parent=parent
 				else:
-					i.father=tf
+					i.parent=tf
 	def getEstimate(self,loc):
 		# H: estimated cost to move from point loc to end point
 		return (abs(loc.x-self.end.x)+abs(loc.y-self.end.y))*10
@@ -158,7 +158,7 @@ class A_Search:
 					e=self.end
 					self.result.append(e)
 					while True:
-						e=e.father
+						e=e.parent
 						if e==None:
 							break
 						self.result.append(e)
@@ -319,7 +319,7 @@ class GameBoard(QMainWindow):#pyqt5 used for visualization
 				e=self.special[0]
 				path=[e]
 				while True:
-					e=e.father
+					e=e.parent
 					if e!=None:
 						path.append(e)
 					else:
