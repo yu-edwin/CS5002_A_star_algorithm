@@ -16,3 +16,11 @@ Install optional packages (if you want to look at the results more in depth):
 ```bash
 pip install pandas matplotlib seaborn
 ```
+
+## Usage
+
+For using the maze pathfinding implementation:
+
+```bash
+python Astar_visualization.py
+```
