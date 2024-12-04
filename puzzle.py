@@ -4,27 +4,22 @@ import itertools
 import heapq
 import time
 import random
-import copy
-from collections import deque
-import multiprocessing as mp
-import pandas as pd
 import pickle
 import argparse
 
-# GOAL = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8)
+
 SOLVED_PUZZLE = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8)
 SOLVED = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8).tobytes()
-UNSOLVABLE = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,15,14,0]],dtype=np.int8).tobytes()
 GOAL = [(3,3),(0,0),(0,1),(0,2),(0,3),(1,0),(1,1),(1,2),(1,3),(2,0),(2,1),(2,2),(2,3),(3,0),(3,1),(3,2)]
-
 class Board:
     def __init__(self,state: np.array = None, method = None):
         self.board = SOLVED_PUZZLE.copy() if state is None else state # sets inital board state if given, otherwise set as solved board
-        # self.h = heuristic # determines if heurstic is needed for this board
-
         self.scramble_path = []
         self.solve_path = []
         self.method = method
+
+    def __repr__(self) -> str:
+        return f"{self.board}"
 
     @property
     def bytes(self):
@@ -33,11 +28,6 @@ class Board:
     @property
     def solved(self):
         return self.bytes == SOLVED
-    
-    @property
-    def scrambled(self):
-        return self.bytes != SOLVED
-
 
     @property
     def heuristic(self):
@@ -67,7 +57,6 @@ class Board:
             row, col = np.where(self.board == idx)
             heuristic += abs(d1 - row) + abs(d2 - col)
         return heuristic[0]
-    
 
     def get_neighbours(self) -> list[Board]:
         """Gets neighbours in the graph
@@ -93,9 +82,6 @@ class Board:
             copy[row,col], copy[row,col+1] = copy[row,col+1], copy[row,col]
             out.append(Board(state=copy,method=self.method))
         return out
-
-    def __repr__(self) -> str:
-        return f"{self.board}"
 
     def walk(self, n: int = 10):
         """scrambles self.board with n steps.
