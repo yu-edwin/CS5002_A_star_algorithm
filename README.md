@@ -19,8 +19,16 @@ pip install pandas matplotlib seaborn
 
 ## Usage
 
-For using the maze pathfinding implementation:
+For using the maze pathfinding implementation to start up PyQt program:
 
 ```bash
 python Astar_visualization.py
+```
+
+For constructing 15puzzle:
+```python
+board = Board()
+board.walk(20) # for a 20 move scramble
+board.solve("a_star") # takes "a_star" or "dijkstra"
+board.reconstruct_path() # displays solve path
 ```
