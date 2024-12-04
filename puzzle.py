@@ -173,24 +173,17 @@ class Board:
         """
         byte_path = []
         node = SOLVED
+        array_path = [np.frombuffer(SOLVED, dtype=np.int8).reshape(4,4)]
         while node:
             byte_path.append(node)
             _, node = self.visited[node]
+            if node:
+                array_path.append(np.frombuffer(node, dtype=np.int8).reshape(4,4))
         self.byte_path = byte_path
+        self.array_path = array_path
+        
+        while self.array_path:
+            print(self.array_path.pop(),end="\r\033[3A")
+            time.sleep(0.5)
+        print("\033[4B")
     
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", help="Input file: data/5/0.pickle ...")
-    parser.add_argument("-m", "--method", help="Solve method: a_star, dijkstra, (bidirectional)")
-    args = parser.parse_args()
-
-
-    with open(args.input, "rb") as fp:
-        board = pickle.load(fp)
-
-    results = board.solve(args.method)
-
-    with open(f"results/{args.method}/{args.input.split('/')[-2]}.csv","a") as f:
-        f.write(f"{args.input.removeprefix('data/')},{results[0]},{results[1]},{results[2]}\n")
