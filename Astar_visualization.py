@@ -166,7 +166,7 @@ class A_Search:
 					break
  
 			yield (tar,self.open,self.close)
-			time.sleep(1)#stop
+			time.sleep(0.05)#stop
 		#self.useTime=time2-time1
 class GameBoard(QMainWindow):#pyqt5 used for visualization
 	def __init__(self):
