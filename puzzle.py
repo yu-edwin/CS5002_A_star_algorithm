@@ -6,6 +6,7 @@ import time
 import random
 import pickle
 import argparse
+import os
 
 
 SOLVED_PUZZLE = np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12],[13,14,15,0]],dtype=np.int8)
@@ -131,42 +132,48 @@ class Board:
                 self.board = new.board
                 return path
         self.scramble_path = path
-        return path
 
-    def solve(self, method = "a_star"):
+    def solve(self, method = "a_star", pattern = False):
         """ Search Algorithms: a_star and dijkstra
         """
         # bookkeeping
         self.method = method
         t1 = time.time()
         counter = itertools.count() 
-        stop  = False
+        if pattern:
+            with open("precompute.pickle","rb") as fp:
+                check = pickle.load(fp)
+        else:
+            check = set([SOLVED])
+        stop = self.bytes in check
 
         # set up dictionary and heap
+        space = 0
         visited = {self.bytes: [0, None]}
         unvisited = [(self.heuristic,next(counter),self)]
         while unvisited and not stop:
             # ways to exit search
-            if len(visited) > 1000000 and time.time() - t1 > 60:
-                print(f"TOO SLOW, {len(visited) = }, {time.time() - t1:.2f} seconds")
+            if len(visited) > 1000000 and len(unvisited) > 1000000 and time.time() - t1 > 60:
+                print(f"TOO SLOW, {len(visited) = }, {len(unvisited) = }, {time.time() - t1:.2f} seconds")
                 break
             distance, _, node = heapq.heappop(unvisited)
             neighbours = node.get_neighbours()
             for i in neighbours:
+                
                 new_distance = distance+1+i.heuristic-node.heuristic
                 if i.bytes not in visited or new_distance < visited[i.bytes][0]:
                     heapq.heappush(unvisited, (new_distance,next(counter),i))
                     visited[i.bytes] = [new_distance,node.bytes]
-                if i.solved:
+                if i.bytes in check:
                     print('solved!!')
                     stop = True
                     break
-
+            space = max(space, len(unvisited))
 
         total_time = time.time() - t1
-        print(f'sampled {len(visited)} states in {total_time:.2f} seconds')
+        print(f'sampled {len(visited)} states in {total_time:.2f} seconds ({len(unvisited)=})')
         self.visited = visited
-        return len(visited), len(unvisited), total_time
+        return len(visited), space, total_time
 
     def reconstruct_path(self):
         """Reconstructs solve path from self.visited dictionary
@@ -181,9 +188,28 @@ class Board:
                 array_path.append(np.frombuffer(node, dtype=np.int8).reshape(4,4))
         self.byte_path = byte_path
         self.array_path = array_path
-        
-        while self.array_path:
-            print(self.array_path.pop(),end="\r\033[3A")
+        self.distance = len(array_path) - 1
+        self.array_path.reverse()
+        for i in self.array_path:
+            print(i,end="\r\033[3A")
             time.sleep(0.5)
         print("\033[4B")
-    
+
+
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", help="Input file: data/5/0.pickle ...")
+    parser.add_argument("-m", "--method", help="Solve method: a_star, dijkstra")
+    parser.add_argument("-p", "--pattern", action="store_true",  help="Optional pattern database")
+    args = parser.parse_args()
+
+    with open(args.input, "rb") as fp:
+        board = pickle.load(fp)
+    results = board.solve(args.method, pattern=args.pattern)
+
+    folder = f"results/{'pattern' if args.pattern else 'no_pattern'}/{args.method}"
+    with open(f"{folder}/{args.input.split('/')[-2]}.csv","a") as f:
+        f.write(f"{args.input.removeprefix('data/')},{results[0]},{results[1]},{results[2]}\n")
