@@ -1,7 +1,7 @@
 # eight_puzzle.py
-# Solves the 8-puzzle in Python 
-# Uses A* algorith 
-# 3x3 grid
+# Solves the 8-puzzle in Python  
+# 8 numbers on a 3x3 grid
+# Uses A* algorithm
 # By Joe Miller
 
 import heapq
