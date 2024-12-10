@@ -1,4 +1,5 @@
-# The 8-puzzle problem 
+# eight_puzzle.py
+# Solves the 8-puzzle in Python 
 # Uses A* algorith 
 # 3x3 grid
 # By Joe Miller
@@ -154,7 +155,7 @@ class Board:
         # if moves left scramble again
         moves -= 1
         if moves > 0:
-            self.scramble()
+            self.scramble(moves)
 
 if __name__ == '__main__':
     initial = ((0, 1, 3), (4, 2, 5), (7, 8, 6))
