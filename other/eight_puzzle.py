@@ -1,10 +1,10 @@
 # The 8-puzzle problem 
-# Uses A* algorith or
-# Dijkstra's algorithm
+# Uses A* algorith 
 # 3x3 grid
 # By Joe Miller
 
 import heapq
+import random
 
 class Node:
     def __init__(self, board, shortest_path_length, previous_node = None):
@@ -13,7 +13,10 @@ class Node:
         self.previous_node = previous_node
 
     def __lt__(self, other):
-        return self.shortest_path_length < other.shortest_path_length
+        # return self.shortest_path_length < other.shortest_path_length
+        self_value = self.shortest_path_length + self.board.min_moves()
+        other_value = other.shortest_path_length + other.board.min_moves()
+        return self_value < other_value
 
 class Board:
     GOAL = ((1,2,3),(4,5,6),(7,8,0))
@@ -22,7 +25,6 @@ class Board:
 
     def __init__(self, board):
         self.board = board
-        self.coords = self.get_coords()
 
     def __str__(self):
         board_str = ""
@@ -34,9 +36,10 @@ class Board:
 
     def min_moves(self):
         goal_coord = [(0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)]
-        for i in range(len(self.coords)):
-            moves = abs(self.coords[i][0] - goal_coord[i][0])
-            moves += abs(self.coords[i][1] - goal_coord[i][1])
+        coords = self.get_coords()
+        for i in range(len(coords)):
+            moves = abs(coords[i][0] - goal_coord[i][0])
+            moves += abs(coords[i][1] - goal_coord[i][1])
         return moves
 
     def get_coords(self):
@@ -104,7 +107,7 @@ class Board:
         tuple_board = ((x0, y0, z0), (x1, y1, z1), (x2, y2, z2))
         return tuple_board
 
-    def solve(self, algorithm = 'd'):
+    def solve(self):
         visited = []
         unvisited = []
         path_length = 0
@@ -125,10 +128,7 @@ class Board:
             for neighbor_board in neighbors:
                 if neighbor_board not in visited:
                     neighbor = Board(neighbor_board)
-                    if algorithm == 'a':
-                        path_length = node.shortest_path_length + neighbor.min_moves()
-                    else:
-                        path_length = node.shortest_path_length + 1
+                    path_length = node.shortest_path_length + 1
                     neighbor_node = Node(neighbor, path_length, node)
                     # put neigbors into list in order of smallest path
                     heapq.heappush(unvisited, neighbor_node)
@@ -147,12 +147,25 @@ class Board:
         # return all the goal node
         return (goal_node, boards_checked)
 
+    def scramble(self, moves = 1):
+        # get neighbors
+        neighbors = self.get_neighbors()
+        # pick random neighbor to set board to
+        self.board = random.choice(neighbors)
+        # if moves left scramble again
+        moves -= 1
+        if moves > 0:
+            self.scramble()
 
 if __name__ == '__main__':
     initial = ((0, 1, 3), (4, 2, 5), (7, 8, 6))
     board = Board(initial)
+    # print(board)
+    board.scramble(13)
+    print(board)
+
     # Pass 'a' for A* algorithm or 'd' for Dijkstra's algorithm
-    goal_node, boards_checked = board.solve('a')
+    goal_node, boards_checked = board.solve()
     print(f"Boards Checked: {boards_checked}")
     if goal_node:
         print("Solved!")
