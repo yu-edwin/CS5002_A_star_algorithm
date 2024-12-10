@@ -160,11 +160,10 @@ class Board:
 if __name__ == '__main__':
     initial = ((0, 1, 3), (4, 2, 5), (7, 8, 6))
     board = Board(initial)
-    # print(board)
     board.scramble(13)
     print(board)
 
-    # Pass 'a' for A* algorithm or 'd' for Dijkstra's algorithm
+    # A* algorithm
     goal_node, boards_checked = board.solve()
     print(f"Boards Checked: {boards_checked}")
     if goal_node:
