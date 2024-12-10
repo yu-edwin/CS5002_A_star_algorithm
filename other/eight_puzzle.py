@@ -13,7 +13,6 @@ class Node:
         self.previous_node = previous_node
 
     def __lt__(self, other):
-        # return self.shortest_path_length < other.shortest_path_length
         self_value = self.shortest_path_length + self.board.min_moves()
         other_value = other.shortest_path_length + other.board.min_moves()
         return self_value < other_value
@@ -163,7 +162,6 @@ if __name__ == '__main__':
     board.scramble(13)
     print(board)
 
-    # A* algorithm
     goal_node, boards_checked = board.solve()
     print(f"Boards Checked: {boards_checked}")
     if goal_node:
