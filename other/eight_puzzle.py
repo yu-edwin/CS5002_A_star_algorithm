@@ -2,7 +2,7 @@
 # Solves the 8-puzzle in Python  
 # 8 numbers on a 3x3 grid
 # Uses A* algorithm
-# By Joe Miller
+# By Joseph Miller
 
 import heapq
 import random
@@ -23,14 +23,14 @@ class Board:
     ROWS = 3
     COLS = 3
 
-    def __init__(self, board):
+    def __init__(self, board = GOAL):
         self.board = board
 
     def __str__(self):
         board_str = ""
         for row in self.board:
             for col in row:
-                board_str += str(col)
+                board_str += f"{col:>{5}}" #str(col)
             board_str += '\n'
         return f"{board_str}"
 
@@ -158,15 +158,13 @@ class Board:
             self.scramble(moves)
 
 if __name__ == '__main__':
-    initial = ((0, 1, 3), (4, 2, 5), (7, 8, 6))
-    board = Board(initial)
-    board.scramble(13)
+    board = Board()
+    board.scramble(20)
     print(board)
 
     goal_node, boards_checked = board.solve()
     print(f"Boards Checked: {boards_checked}")
     if goal_node:
-        print("Solved!")
         node = goal_node
         print("Solution Path:")
         solved_path = []
