@@ -30,7 +30,7 @@ class Board:
         board_str = ""
         for row in self.board:
             for col in row:
-                board_str += f"{col:>{5}}" #str(col)
+                board_str += f"{col:>{2}}"
             board_str += '\n'
         return f"{board_str}"
 
@@ -144,7 +144,7 @@ class Board:
             for board in shortest_paths.keys():
                 if board.board == self.GOAL:
                     goal_node = shortest_paths[board]
-        # return all the goal node
+        # return the goal node and the number of boards visited
         return (goal_node, boards_checked)
 
     def scramble(self, moves = 1):
