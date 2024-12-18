@@ -149,7 +149,7 @@ class Board:
 
         # set up dictionary and heap
         space = 0
-        visited = {self.bytes: [0, None]}
+        visited = {self.bytes: [self.heuristic, None]}
         unvisited = [(self.heuristic,next(counter),self)]
         while unvisited and not stop:
             # ways to exit search
